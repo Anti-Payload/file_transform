@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
     // 每接收一段数据，便将其写入文件中，循环直到文件接收完并写完为止
     bzero(buffer, BUFFER_SIZE);
     int length = 0;
-    while((length = recv(client_socket_fd, buffer, BUFFER_SIZE, 0)) > 0)
+    while((length = recv(client_socket_fd, buff_bin, BUFFER_SIZE, 0)) > 0)
     {
         if(fwrite(buff_bin, sizeof(unsigned char), length, fp) < length)
         {

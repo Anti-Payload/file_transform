@@ -12,10 +12,11 @@ int main(int argc, char *argv[])
     int sockfd, newsockfd, portno;
     struct sockaddr_in serv_addr, client_addr;
     socklen_t clilen;
+    portno = atoi(argv[1]);
     bzero( &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htons(INADDR_ANY);
-    serv_addr.sin_port = htons(13123);
+    serv_addr.sin_port = htons(portno);
     //bind & listen
     int server_socketfd = socket(PF_INET, SOCK_STREAM, 0);
     if (server_socketfd < 0 )   perror("Fail to create socket");
@@ -27,7 +28,7 @@ int main(int argc, char *argv[])
         clilen = sizeof(client_addr);
         newsockfd = accept (server_socketfd, (struct sockaddr *) &client_addr, &clilen);
         char buffer [maxlength];// 待传输的文件名
-        void *  buff_bin[1024];//buffer for binaray transform
+        unsigned char buff_bin[1024];//buffer for binaray transform
         bzero (buffer, sizeof(buffer) / sizeof (char));
         int rc = read(newsockfd, buffer, 1024);
         printf("the filename is %s\n", buffer);
@@ -38,7 +39,7 @@ int main(int argc, char *argv[])
         exit(1);
         }
         int re;
-        while ((re = fread(buff_bin, sizeof(void *), maxlength, fp)) != 0)
+        while ((re = fread(buff_bin, sizeof(unsigned char), maxlength, fp)) != 0)
         {
             if (send(newsockfd, buff_bin, re, 0) < 0)
                 printf("fail to send %s\n", buffer);
