@@ -19,7 +19,7 @@ const char *opcodes[] =
     "getfile",
     "putfile",
     "sendmsg",
-}//op-code list
+};//op-code list
 
 typedef struct node
 {
