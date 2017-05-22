@@ -69,7 +69,8 @@ int main(int argc, char *argv[])
     char file_name[FILE_NAME_MAX_SIZE+1];
     bzero(file_name, FILE_NAME_MAX_SIZE+1);
     printf("Please Input File Name On Server:\t");
-    scanf("%s", file_name);
+    gets(file_name);
+    printf("%s", file_name);
 
     char buffer[BUFFER_SIZE];
     unsigned char buff_bin[BUFFER_SIZE];//buffer for binaray transform

@@ -14,9 +14,24 @@ do {\
     exit(-1);\
 }while(0)\
 
-int *get_space(char *);//获取字符串空格位置，返回值是储存位置的数组
-char * split_str(char *);//模拟split操作，字符串拆分成字符串数组，对空格有效。
-int get_len(int *);
+const char *opcodes[] = 
+{
+    "getfile",
+    "putfile",
+    "sendmsg",
+}//op-code list
+
+typedef struct node
+{
+    int data;
+    struct node *next;
+}Node, *LinkedList;
+
+
+LinkedList get_pos(char *, char);//get ch's position in the buffer string
+void trail_insert(LinkedList, int);// 尾插链表用来存放字符在字符串中的位置
+void head_insert (LinkedList, int);
+char *split_str(char *, char);//函数返回分解的字符串数组
 
 int main(int argc, char *argv[])
 {
@@ -55,6 +70,8 @@ int main(int argc, char *argv[])
             unsigned char buff_bin[1024];//buffer for binaray transform
             bzero (buffer, sizeof(buffer) / sizeof (char));
             int rc = read(newsockfd, buffer, 1024);
+            char **codes = split_str(buffer, ' ');
+            printf("%s\n%s\n",codes[0], codes[1]);
             printf("the filename is %s\n", buffer);
             FILE * fp;
             if ((fp = fopen(buffer,"rb")) == NULL)
@@ -76,62 +93,74 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-
-int *get_space(char *buffer)//获取字符串空格位置，返回值是储存位置的数组
+void trail_insert(LinkedList l, int d)
 {
-    int i;
-    int blank_num = 1;//blank_pos[0] = 0,方便其他函数计算。
-    static int blank_pos[Len];//静态变量，一直不会释放
-    memset(blank_pos, -1, sizeof(blank_pos)); //设置-1 方便后期剪切字符串方便
-    for (i = 0; i < strlen(buffer); i++)
-    {
-        if (isblank(buffer[i]))
-        {
-            printf("the %dth num is %d\n", blank_num, i);
-            blank_pos[blank_num++] = i;
-        }
-    }
-    return blank_pos;
+    Node * a = (Node *)malloc (sizeof(Node));
+    Node *p = l;
+    while (p -> next != NULL)
+        p = p ->next;
+    a -> data = d;
+    a ->next = p ->next;
+    p -> next = a;
+    l -> data ++;// record number of nodes
 }
 
-char * split_str(char *buffer)//模拟split操作，字符串拆分成字符串数组，对空格有效。
+void head_insert (LinkedList l, int d)
 {
-    int *a = get_space(buffer);
-    int len = get_len(a);
-    len ++;
-    int last_tail = strlen(buffer);
-    char *words[len];// 二维数组，存储分词
+    Node *a = (Node *)malloc (sizeof(Node));
+    a -> data = d;
+    a -> next = l -> next;
+    l -> next = a;
+}
+
+LinkedList get_pos(char *buffer, char ch)//get ch's position in the buffer string
+{
+    LinkedList l = (Node *) malloc(sizeof(Node));
+    l -> data = 0;
+    l -> next =NULL; 
     int i;
-    for (i = 0; i < len; i++)
+    for (i = 0; i < strlen(buffer); i ++)
     {
-        if (i < len - 1)
+        if(buffer[i] == ch)
+            trail_insert(l, i);
+    }
+    printf("there're %d nodes in the linkedlist\n",l -> data);
+    return l;
+}
+
+char *split_str(char *buffer, char ch)
+{
+    LinkedList l = get_pos (buffer, ch);
+    char *words[l -> data +1];
+    int i;
+    int words_num = l -> data;
+    int pre_pos = -1;
+    l = l -> next;
+    for (i = 0; i <= words_num; i ++)
+    {
+        int str_length;
+        if (i != words_num)
         {
-            int str_length = a[i + 1] - a[i] - 1;
-            words[i] = (char *)malloc(str_length);
-            strncpy(words[i], buffer, str_length);
+            str_length = l -> data - pre_pos -1;
+            words[i] = (char *)malloc (str_length);
+            strncpy (words[i], (buffer + pre_pos + 1), str_length);
             words[i][str_length] = '\0';
-            buffer += (str_length + 1);
-            //printf("%s's length is %d\n", words[i], strlen(words[i]));
+            //printf("pos is %d and  string is %s\n", pre_pos, words[i]);
+            pre_pos =l -> data;
+
         }
         else
         {
-            int str_length = last_tail - a[len - 1] - 1;
-            words[i] = (char *)malloc(str_length);
-            strncpy(words[i], buffer, str_length);
-            words[i][str_length] = '\0';
-            buffer += (str_length + 1);
-            //printf("%s's length is %d\n", words[i], strlen(words[i]));
+            //printf("last one ");
+            str_length = strlen(buffer) - pre_pos ;
+            words[i] = (char *)malloc (str_length + 1);
+            strcpy(words[i], (buffer +pre_pos + 1));
+            //printf("%s\n",words[i]);
+            //printf("pos is %d and  string is %s\n", pre_pos, words[i]);
         }
+        if (l != NULL)  l = l->next;
     }
-    return words;
-}
 
-int get_len(int *a)
-{
-    int len = 1, i;
-    for (i = 1; a[i] != -1; i++)
-        len++;
-    printf("there're %d spaces in the option-code\n", len);
-    return len;
+    return words;
 }
 
