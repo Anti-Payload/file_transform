@@ -29,6 +29,7 @@ typedef struct node
 
 
 LinkedList get_pos(char *, char);//get ch's position in the buffer string
+int match_opcode(char *, const char **);//match opcode in codelist
 void trail_insert(LinkedList, int);// 尾插链表用来存放字符在字符串中的位置
 void head_insert (LinkedList, int);
 char *split_str(char *, char);//函数返回分解的字符串数组
@@ -66,27 +67,35 @@ int main(int argc, char *argv[])
         {
             close(server_socketfd);
             printf("recv connect ip:%s port:%d by process %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), getpid());
-            char buffer [maxlength];// 待传输的文件名
-            unsigned char buff_bin[1024];//buffer for binaray transform
-            bzero (buffer, sizeof(buffer) / sizeof (char));
+            char buffer [maxlength];//buffer for opcode recieve from client 
             int rc = read(newsockfd, buffer, 1024);
             char **codes = split_str(buffer, ' ');
-            printf("%s\n%s\n",codes[0], codes[1]);
-            printf("the filename is %s\n", buffer);
-            FILE * fp;
-            if ((fp = fopen(buffer,"rb")) == NULL)
+            switch (match_opcode(codes[0], opcodes))
             {
-                printf("no file name as %s\n", buffer);
-                exit(-1);
-            }
-            int re;
-            while ((re = fread(buff_bin, sizeof(unsigned char), maxlength, fp)) != 0)
-            {
-                if (send(newsockfd, buff_bin, re, 0) < 0)
-                    printf("fail to send %s\n", buffer);
-                bzero(buff_bin, maxlength);
-            }
-            fclose(fp);
+                case 1://getfile
+                    printf("the filename is %s\n", codes[1]);
+                    unsigned char buff_bin[1024];//buffer for binaray transform
+                    bzero (buffer, sizeof(buffer) / sizeof (char));
+                    FILE * fp;
+                    if ((fp = fopen(buffer,"rb")) == NULL)
+                    {
+                        printf("no file name as %s\n", buffer);
+                        exit(-1);
+                    }
+                    int re;
+                    while ((re = fread(buff_bin, sizeof(unsigned char), maxlength, fp)) != 0)
+                    {
+                        if (send(newsockfd, buff_bin, re, 0) < 0)
+                            printf("fail to send %s\n", buffer);
+                        bzero(buff_bin, maxlength);
+                    }
+                    fclose(fp);
+                    break;
+                case 2://putfile
+                    break;
+                case 3://sendmag
+
+
             return 0;//multi process should exit child-process
         }
     }
@@ -163,4 +172,19 @@ char *split_str(char *buffer, char ch)
 
     return words;
 }
+int match_opcode(char *opcode,const char **codelist)
+{
+    int i = 0, flag = -1;
+    while (stelen(codelist[i]) != 0 && codelist[i][0] != '\0')
+    {
+        if (strcmp(opcode, codelist[i]) == 0)
+        {
+            flag = i;
+            break;
+        }
+        i ++;
+    }
+    return flag;
+}
+
 
