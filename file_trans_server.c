@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -32,7 +33,7 @@ LinkedList get_pos(char *, char);//get ch's position in the buffer string
 int match_opcode(char *, const char **);//match opcode in codelist
 void trail_insert(LinkedList, int);// 尾插链表用来存放字符在字符串中的位置
 void head_insert (LinkedList, int);
-char *split_str(char *, char);//函数返回分解的字符串数组
+char **split_str(char *,const char);//函数返回分解的字符串数组
 
 int main(int argc, char *argv[])
 {
@@ -75,6 +76,7 @@ int main(int argc, char *argv[])
             char *fname = codes[1];
             int flag = match_opcode(s, opcodes);
             printf("%s and %s\n", s, fname);
+            printf("%s and %s\n", codes[0], codes[1]);
             switch (flag)
             {
                 case 0://getfile
@@ -146,40 +148,52 @@ LinkedList get_pos(char *buffer, char ch)//get ch's position in the buffer strin
     return l;
 }
 
-char *split_str(char *buffer, char ch)
+char** split_str(char* a_str, const char a_delim)
 {
-    LinkedList l = get_pos (buffer, ch);
-    char *words[l -> data +1];
-    int i;
-    int words_num = l -> data;
-    int pre_pos = -1;
-    l = l -> next;
-    for (i = 0; i <= words_num; i ++)
-    {
-        int str_length;
-        if (i != words_num)
-        {
-            str_length = l -> data - pre_pos -1;
-            words[i] = (char *)malloc (str_length);
-            strncpy (words[i], (buffer + pre_pos + 1), str_length);
-            words[i][str_length] = '\0';
-            //printf("pos is %d and  string is %s\n", pre_pos, words[i]);
-            pre_pos =l -> data;
+    char** result    = 0;
+    size_t count     = 0;
+    char* tmp        = a_str;
+    char* last_comma = 0;
+    char delim[2];
+    delim[0] = a_delim;
+    delim[1] = 0;
 
-        }
-        else
+    /* Count how many elements will be extracted. */
+    while (*tmp)
+    {
+        if (a_delim == *tmp)
         {
-            //printf("last one ");
-            str_length = strlen(buffer) - pre_pos ;
-            words[i] = (char *)malloc (str_length + 1);
-            strcpy(words[i], (buffer +pre_pos + 1));
-            //printf("%s\n",words[i]);
-            //printf("pos is %d and  string is %s\n", pre_pos, words[i]);
+            count++;
+            last_comma = tmp;
         }
-        if (l != NULL)  l = l->next;
+        tmp++;
     }
 
-    return words;
+    /* Add space for trailing token. */
+    count += last_comma < (a_str + strlen(a_str) - 1);
+
+    /* Add space for terminating null string so caller
+       knows where the list of returned strings ends. */
+    count++;
+
+    result = malloc(sizeof(char*) * count);
+
+    if (result)
+    {
+        size_t idx  = 0;
+        char* token = strtok(a_str, delim);
+
+        while (token)
+        {
+            assert(idx < count);
+            *(result + idx++) = strdup(token);
+            token = strtok(0, delim);
+        }
+        assert(idx == count - 1);
+        *(result + idx) = 0;
+    }
+
+    return result;
 }
 int match_opcode(char *opcode,const char **codelist)
 {
