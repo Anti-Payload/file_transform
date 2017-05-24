@@ -70,32 +70,41 @@ int main(int argc, char *argv[])
             char buffer [maxlength];//buffer for opcode recieve from client 
             int rc = read(newsockfd, buffer, 1024);
             char **codes = split_str(buffer, ' ');
-            switch (match_opcode(codes[0], opcodes))
+            printf("%s and %s\n",codes[0], codes[1]);
+            char *s = codes[0];//这里我不太明白为什么codes 的地址会变化。如果输出codes[0]和codes[1],两次的结果就会不一样。
+            char *fname = codes[1];
+            int flag = match_opcode(s, opcodes);
+            printf("%s and %s\n", s, fname);
+            switch (flag)
             {
-                case 1://getfile
-                    printf("the filename is %s\n", codes[1]);
+                case 0://getfile
+                    printf("the filename is %s\n", fname);
                     unsigned char buff_bin[1024];//buffer for binaray transform
                     bzero (buffer, sizeof(buffer) / sizeof (char));
                     FILE * fp;
-                    if ((fp = fopen(buffer,"rb")) == NULL)
+                    if ((fp = fopen(fname,"rb")) == NULL)
                     {
-                        printf("no file name as %s\n", buffer);
+                        printf("no file name as %s\n", codes[1]);
                         exit(-1);
                     }
                     int re;
                     while ((re = fread(buff_bin, sizeof(unsigned char), maxlength, fp)) != 0)
                     {
                         if (send(newsockfd, buff_bin, re, 0) < 0)
-                            printf("fail to send %s\n", buffer);
+                            printf("fail to send %s\n", fname);
                         bzero(buff_bin, maxlength);
                     }
                     fclose(fp);
                     break;
-                case 2://putfile
+                case 1://putfile
                     break;
-                case 3://sendmag
-
-
+                case 2://sendmag
+                    break;
+                default:
+                    printf("wrong opcode of %s\n", codes[1]);
+                    break;
+            }
+            printf("done\n");
             return 0;//multi process should exit child-process
         }
     }
@@ -175,7 +184,7 @@ char *split_str(char *buffer, char ch)
 int match_opcode(char *opcode,const char **codelist)
 {
     int i = 0, flag = -1;
-    while (stelen(codelist[i]) != 0 && codelist[i][0] != '\0')
+    while (strlen(codelist[i]) != 0 && codelist[i][0] != '\0')
     {
         if (strcmp(opcode, codelist[i]) == 0)
         {
